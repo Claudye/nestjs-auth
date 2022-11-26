@@ -6,12 +6,15 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategy';
 import { HashModule } from 'src/hash/hash.module';
+import { JWT_AUTH_KEY } from 'src/constants/env';
 
 @Module({
   imports:[
     UsersModule,
     PassportModule,
-    JwtModule.register({}),
+    JwtModule.register({
+      secret: JWT_AUTH_KEY
+    }),
     HashModule
   ],
   providers: [AuthService,JwtStrategy],

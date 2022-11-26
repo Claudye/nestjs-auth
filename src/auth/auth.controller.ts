@@ -56,7 +56,7 @@ export class AuthController {
      */
      @Get('verify-email')
     verifyEmail(@Req() request) {
-        let expires, email, userid, bearer_token:string ;
+        let bearer_token:string ;
         bearer_token = request.headers.authorization as string ;
         const jwt_token = bearer_token.replace('Bearer','').trim()
         const auth = this.authService.auth({

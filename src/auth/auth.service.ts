@@ -97,7 +97,7 @@ export class AuthService {
      * @returns 
      */
     async signAccessToken(userId: number|string, email: string): Promise<{ access_token: string; }> {
-        const payload = { sub: userId, email };
+        const payload = { sub: userId, email:email };
 
         return {
             access_token: await this.jwtService.signAsync(

@@ -4,7 +4,9 @@ import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {
-    constructor(private usersService: UsersService) {
+    constructor(
+        private usersService: UsersService
+        ) {
 
     }
     /**
@@ -27,10 +29,10 @@ export class UsersController {
     async createUser () {
 
     }
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt-new-user'))
     @Get('profile')
     async profile (@Req() req){
-        return 'my info'
+        return req.user
     }
 
     @Get(':id')
