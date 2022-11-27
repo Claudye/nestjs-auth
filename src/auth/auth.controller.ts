@@ -44,6 +44,7 @@ export class AuthController {
       return this.authService.login(body)
     }
 
+    @Post('reset-password')
     resetPassword (@Body() resetPassDto: ResetPassDto){
       // get old password, and check if user can process
     }
