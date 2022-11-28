@@ -1,19 +1,16 @@
-import { Body, Controller, Get, Post, Req, Request, Res, UseGuards } from '@nestjs/common';
-import { get } from 'http';
-import { CreateUserDto } from 'src/users/dto/create-user.dto';
+import { Body, Controller, Get, Param, Post, Req, Request, Res, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { EncryptionService } from 'src/encryption/encryption.service';
 import { ResetPassDto } from 'src/users/dto/reset-pass.dto';
 import { UsersService } from 'src/users/users.service';
-import { userToObject } from 'src/users/utils';
 import { AuthService } from './auth.service';
 import { RegisterUserDto } from './dto';
-import { LocalAuthGuard } from './local-auth.guard';
-import { VerifyEmail } from './parts/verify-email';
 @Controller('auth')
 export class AuthController {
 
     constructor(
       private authService: AuthService,
-      private usersService: UsersService) {
+      private usersService: UsersService ) {
         
     }
     /**
@@ -24,18 +21,18 @@ export class AuthController {
      */
     @Post('register')
     async register(@Body() createUserDto: RegisterUserDto, @Res() response){
-      const res = await this.authService.register(createUserDto).then(access_token=>{
-        return {
-          data: access_token
-         }
+      const res = await this.authService.register(createUserDto).then(data=>{
+        return data
       }).catch(error=>{
         response.status(500)
         console.log(error)
         return response.send({
           status: false,
-          message: "Failed to create user"
+          message: "Failed to create user",
+          data:null
         })
       })
+      
       return response.send(res)
     }
 
@@ -55,15 +52,12 @@ export class AuthController {
     /**
      * /verify-email/userid/token
      */
-     @Get('verify-email')
-    verifyEmail(@Req() request) {
-        let bearer_token:string ;
-        bearer_token = request.headers.authorization as string ;
-        const jwt_token = bearer_token.replace('Bearer','').trim()
-        const auth = this.authService.auth({
-          access_token:jwt_token
-        })
-        //const verifyEmail = new VerifyEmail()
-        return auth
+    @Get('verify-email/:token')
+    async verifyEmail(@Param() param, @Req() request) {
+
+      //If has valid login token,validate email
+      const auth = request.user
+      //const verifyEmail = new VerifyEmail()
+      return this.authService.verifyEmail(param.token)
     }
 }

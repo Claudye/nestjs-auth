@@ -1,6 +1,7 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UsersService } from './users.service';
+import { userToObject } from './utils';
 
 @Controller('users')
 export class UsersController {
@@ -29,10 +30,10 @@ export class UsersController {
     async createUser () {
 
     }
-    @UseGuards(AuthGuard('jwt-new-user'))
+    @UseGuards(AuthGuard('jwt-auth'))
     @Get('profile')
     async profile (@Req() req){
-        return req.user
+        return userToObject(req.user,['password'])
     }
 
     @Get(':id')

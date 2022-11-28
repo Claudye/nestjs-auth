@@ -4,7 +4,7 @@ import { ExtractJwt, Strategy } from "passport-jwt";
 import { JWT_AUTH_KEY } from "src/constants/env";
 import { UsersService } from "src/users/users.service";
 @Injectable()
-export class JwtStrategy extends PassportStrategy (Strategy,'jwt-new-user') {
+export class JwtStrategy extends PassportStrategy (Strategy,'jwt-auth') {
     constructor(
         private usersService: UsersService
     ){

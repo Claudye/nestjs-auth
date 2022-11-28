@@ -8,8 +8,13 @@ import { UsersModule } from './users/users.module';
 import { JwtService } from '@nestjs/jwt';
 import { User } from './users/entities/User';
 import { HashModule } from './hash/hash.module';
+import { ConfigModule } from '@nestjs/config';
+import { EncryptionModule } from './encryption/encryption.module';
 @Module({
-  imports: [AuthModule, UsersModule, TypeOrmModule.forRoot({
+  imports: [
+    AuthModule,
+    UsersModule,
+    TypeOrmModule.forRoot({
     type: 'mysql',
     host: 'localhost',
     database: 'nest_auth',
@@ -18,8 +23,16 @@ import { HashModule } from './hash/hash.module';
     password: '',
     synchronize: true,
     entities: [User]
-  }), HashModule],
+  }),
+  HashModule,
+  ConfigModule.forRoot({
+    isGlobal:true
+  }),
+  EncryptionModule
+],
   controllers: [AppController],
   providers: [AppService, AuthService,JwtService],
 })
-export class AppModule {}
+export class AppModule {
+  static ENCRYPTION_KEY_LENGHT= 16 ;
+}

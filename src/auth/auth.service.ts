@@ -6,13 +6,15 @@ import { LoginUserDto } from './dto/login-user.dto';
 import { RegisterUserDto } from './dto';
 import { HashService } from 'src/hash/hash.service';
 import { AuthAccessToken } from './types';
+import { EncryptionService } from 'src/encryption/encryption.service';
 
 @Injectable()
 export class AuthService {
     constructor(
         private usersService: UsersService,
         private jwtService: JwtService,
-        private hashService: HashService
+        private hashService: HashService,
+        private encrypt: EncryptionService
         ) {
     }
     /**
@@ -46,7 +48,20 @@ export class AuthService {
         const hash = await  this.hashService.hash(registerUserDto.password)
         registerUserDto.password = hash
         const user = await this.usersService.create(registerUserDto)
-        return this.signAccessToken(user.id, user.email)
+        const accessToken = await this.signAccessToken(user.id, user.email)
+
+        const data = {
+            userId:user.id,
+            email: user.email,
+            init: Date.now()
+        }
+        const verify_email_token= this.encrypt.encrypt(
+            JSON.stringify(data)
+        )
+        return {
+            access_token:accessToken,
+            verify_email_token:verify_email_token
+        }
     }
     /**
      * Get user authenticate
@@ -54,7 +69,7 @@ export class AuthService {
      */
     auth(accessToken: AuthAccessToken) {
         const payload = this.jwtService.decode(accessToken.access_token)
-        return payload
+        return this.usersService.findById(payload.sub)
     }
 
     async resetPassword(email: string, pass: string, oldpass: string) {
@@ -105,5 +120,22 @@ export class AuthService {
             
                 )
         };
+    }
+
+    async verifyEmail(token: string){
+        const data:{
+            userId:number,
+            email: string,
+            init:number
+        } = JSON.parse(this.encrypt.decrypt(token))
+
+        const user= await this.usersService.findById(data.userId)
+        const isExpired = false;
+
+        //process to verfication later
+        if (user.email == data.email) {
+            
+        }
+      return  user
     }
 }

@@ -7,6 +7,7 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategy';
 import { HashModule } from 'src/hash/hash.module';
 import { JWT_AUTH_KEY } from 'src/constants/env';
+import { EncryptionModule } from 'src/encryption/encryption.module';
 
 @Module({
   imports:[
@@ -15,7 +16,8 @@ import { JWT_AUTH_KEY } from 'src/constants/env';
     JwtModule.register({
       secret: JWT_AUTH_KEY
     }),
-    HashModule
+    HashModule,
+    EncryptionModule
   ],
   providers: [AuthService,JwtStrategy],
   controllers: [AuthController]

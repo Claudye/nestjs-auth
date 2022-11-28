@@ -18,4 +18,7 @@ export class User{
 
     @Column({length:22, nullable:true})
     phone: string
+
+    @Column({nullable:true})
+    email_verified_at?: string
 }
