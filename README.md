@@ -1,2 +1,2 @@
 ### Authentification with nestjs
-Nestjs jwt, local, oauth authenfication source code
+Nestjs jwt, local, oauth, B2B authenfication source code
