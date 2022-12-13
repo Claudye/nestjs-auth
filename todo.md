@@ -7,3 +7,4 @@
    
     - Forget password
     - Reset password
+    - Edit profile
