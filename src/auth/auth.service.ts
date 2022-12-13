@@ -7,6 +7,8 @@ import { RegisterUserDto } from './dto';
 import { HashService } from 'src/hash/hash.service';
 import { AuthAccessToken } from './types';
 import { EncryptionService } from 'src/encryption/encryption.service';
+import { AuthModule } from './auth.module';
+import { RCODES } from 'src/constants';
 
 @Injectable()
 export class AuthService {
@@ -15,7 +17,7 @@ export class AuthService {
         private jwtService: JwtService,
         private hashService: HashService,
         private encrypt: EncryptionService
-        ) {
+    ) {
     }
     /**
      * 
@@ -37,30 +39,28 @@ export class AuthService {
      * @returns 
      */
     async login(data: LoginUserDto): Promise<{ access_token: string; }> {
-        const user = await this.attempt(data.email, data.password) ;
+        const user = await this.attempt(data.email, data.password);
         if (user) {
             return await this.signAccessToken(user.id, user.email)
         }
         throw new UnauthorizedException();
     }
 
-    async register(registerUserDto: RegisterUserDto){
-        const hash = await  this.hashService.hash(registerUserDto.password)
-        registerUserDto.password = hash
-        const user = await this.usersService.create(registerUserDto)
-        const accessToken = await this.signAccessToken(user.id, user.email)
+    async register(registerUserDto: RegisterUserDto) {
 
-        const data = {
-            userId:user.id,
-            email: user.email,
-            init: Date.now()
-        }
-        const verify_email_token= this.encrypt.encrypt(
-            JSON.stringify(data)
+        registerUserDto.password = await
+            this.hashService.hash(
+                registerUserDto.password
+            )
+        const user = await this.usersService.create(registerUserDto)
+        const accessToken = await this.signAccessToken(
+            user.id,
+            user.email
         )
+
         return {
-            access_token:accessToken,
-            verify_email_token:verify_email_token
+            access_token: accessToken,
+            verify_email_token: this.generateVerifyEmailToken(user)
         }
     }
     /**
@@ -111,31 +111,59 @@ export class AuthService {
      * @param email 
      * @returns 
      */
-    async signAccessToken(userId: number|string, email: string): Promise<{ access_token: string; }> {
-        const payload = { sub: userId, email:email };
+    async signAccessToken(userId: number | string, email: string): Promise<{ access_token: string; }> {
+        const payload = { sub: userId, email: email };
 
         return {
             access_token: await this.jwtService.signAsync(
                 payload, { secret: JWT_AUTH_KEY, expiresIn: '172800m' }
-            
-                )
+
+            )
         };
     }
-
-    async verifyEmail(token: string){
-        const data:{
-            userId:number,
+    /**
+     * Return false if user not found
+     * Return user if user is auth and not verified
+     * @param token 
+     * @param jwtToken 
+     * @returns 
+     */
+    async verifyEmail(token: string, jwtToken?: string) {
+        let canProcess = false;
+        const data: {
+            userId: number,
             email: string,
-            init:number
+            init: number
         } = JSON.parse(this.encrypt.decrypt(token))
 
-        const user= await this.usersService.findById(data.userId)
-        const isExpired = false;
+        const user = await this.usersService.findById(data.userId)
+        const isExpired = Date.now() - (data.init + AuthModule.VERIFY_EMAIL_EXPIRED_AT) <= 0;
 
-        //process to verfication later
-        if (user.email == data.email) {
-            
+        if (jwtToken) {
+            const payload: any = this.jwtService.decode(jwtToken)
+            canProcess = user.id == payload.sub
         }
-      return  user
+        //process to verfication later
+        if ((user.email == data.email) && !isExpired) {
+            if (!canProcess) {
+                //update user
+                return user
+            } else {
+                const acess_token = await this.signAccessToken(user.id, user.email)
+                return acess_token
+            }
+        }
+        return false;
+    }
+
+    generateVerifyEmailToken(user: any) {
+        const data = {
+            userId: user.id,
+            email: user.email,
+            init: Date.now()
+        }
+        return this.encrypt.encrypt(
+            JSON.stringify(data)
+        )
     }
 }

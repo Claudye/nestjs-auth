@@ -22,4 +22,6 @@ import { EncryptionModule } from 'src/encryption/encryption.module';
   providers: [AuthService,JwtStrategy],
   controllers: [AuthController]
 })
-export class AuthModule {}
+export class AuthModule {
+  static VERIFY_EMAIL_EXPIRED_AT= 172800
+}
