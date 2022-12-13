@@ -85,7 +85,7 @@ export class AuthService {
             throw403()
         }
 
-        this.usersService.update();
+        //this.usersService.update();
     }
     /**
      * Verify password
@@ -113,44 +113,46 @@ export class AuthService {
      */
     async signAccessToken(userId: number | string, email: string): Promise<{ access_token: string; }> {
         const payload = { sub: userId, email: email };
-
         return {
             access_token: await this.jwtService.signAsync(
-                payload, { secret: JWT_AUTH_KEY, expiresIn: '172800m' }
+                payload, { secret: JWT_AUTH_KEY, expiresIn: AuthModule.JWT_TOKEN_EXPIRED_AT }
 
             )
         };
     }
     /**
+     * Even if user has a good email verifing token if his isn't connected before,
+     * He must provide his credentials before verification will pass
      * Return false if user not found
-     * Return user if user is auth and not verified
+     * Return user if user is auth
+     * if user is authentificated return access token
      * @param token 
      * @param jwtToken 
      * @returns 
      */
     async verifyEmail(token: string, jwtToken?: string) {
-        let canProcess = false;
+        let userIsAuthentificated = false;
         const data: {
             userId: number,
             email: string,
             init: number
         } = JSON.parse(this.encrypt.decrypt(token))
 
-        const user = await this.usersService.findById(data.userId)
+        let user = await this.usersService.findById(data.userId)
         const isExpired = Date.now() - (data.init + AuthModule.VERIFY_EMAIL_EXPIRED_AT) <= 0;
 
         if (jwtToken) {
             const payload: any = this.jwtService.decode(jwtToken)
-            canProcess = user.id == payload.sub
+            userIsAuthentificated = user.id == payload.sub
         }
-        //process to verfication later
+        //
         if ((user.email == data.email) && !isExpired) {
-            if (!canProcess) {
-                //update user
-                return user
+            if (!userIsAuthentificated) {
+                return await this.signAccessToken(user.id, user.email)               
             } else {
-                const acess_token = await this.signAccessToken(user.id, user.email)
-                return acess_token
+                user =await this.usersService.update(user,{email_verified_at:Date.now()})
+                delete user.password
+                return user
             }
         }
         return false;

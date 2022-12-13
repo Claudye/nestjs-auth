@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -10,6 +10,10 @@ import { User } from './users/entities/User';
 import { HashModule } from './hash/hash.module';
 import { ConfigModule } from '@nestjs/config';
 import { EncryptionModule } from './encryption/encryption.module';
+import { NestModule } from '@nestjs/common/interfaces/modules';
+import { VerifyEmailMiddleware } from './middleware/verify-email.middleware';
+import { AuthMiddleware } from './middleware/auth.middleware';
+import { AuthController } from './auth/auth.controller';
 @Module({
   imports: [
     AuthModule,
@@ -33,6 +37,11 @@ import { EncryptionModule } from './encryption/encryption.module';
   controllers: [AppController],
   providers: [AppService, AuthService,JwtService],
 })
-export class AppModule {
+export class AppModule implements NestModule{
   static ENCRYPTION_KEY_LENGHT= 16 ;
+  configure(consumer: MiddlewareConsumer){
+    consumer.apply(AuthMiddleware).forRoutes('users')
+    consumer.apply(AuthMiddleware).forRoutes('auth/resend-email-token')
+    consumer.apply(VerifyEmailMiddleware).forRoutes('users')
+  }
 }

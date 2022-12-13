@@ -24,4 +24,5 @@ import { EncryptionModule } from 'src/encryption/encryption.module';
 })
 export class AuthModule {
   static VERIFY_EMAIL_EXPIRED_AT= 172800
+  static JWT_TOKEN_EXPIRED_AT= '172800m'
 }

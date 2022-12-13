@@ -45,7 +45,13 @@ export class UsersService {
     return this.userRepository.find()
   }
 
-  update() {
-    //this.userRepository.update()
+  async update(u:User, data:any) {
+    const user = await this.findById(u.id)
+    for (const key in data) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
+        user[key] = data[key];
+      }
+    }
+   return await this.userRepository.save(user)
   }
 }

@@ -4,6 +4,7 @@ import { RCODES } from 'src/constants';
 import { ResetPassDto } from 'src/users/dto/reset-pass.dto';
 import { User } from 'src/users/entities/User';
 import { UsersService } from 'src/users/users.service';
+import { jwt_access_token_from_req } from 'src/utils/helpers';
 import { AuthService } from './auth.service';
 import { RegisterUserDto } from './dto';
 @Controller('auth')
@@ -55,24 +56,32 @@ export class AuthController {
    */
   @Get('verify-email/:token')
   async verifyEmail(@Param() param, @Req() request, @Res() response) {
-    let code = RCODES.USER_FOUND, status = false;
+    let code = RCODES.USER_FOUND, status = false, statusCode = 200;
     //If has valid login token,validate email
-    const auth = request.user
-    //const verifyEmail = new VerifyEmail()
-    const res = await this.authService.verifyEmail(param.token)
+
+    const res = await this.authService.verifyEmail(param.token, jwt_access_token_from_req(request))
 
     if (res == false) {
       throw new UnauthorizedException()
     } else if (res instanceof User) {
-      code = RCODES.USER_AUTHENTIFICATE;
+      code = RCODES.USER_EMAIL_VERIFIED;
     } else {
-      code = RCODES.USER_EMAIL_VERIFIED
+      code = RCODES.USER_AUTHENTIFICATE
+      statusCode = 403
       status = true
     }
-
+    response.status(statusCode)
     return response.send({
       responsecode: code,
-      status: status
+      status: status,
+      data:res
     })
+  }
+  @Post('resend-email-token')
+  resendEmailValidationToken(@Req() req) {
+
+    return {
+      verify_email_token: this.authService.generateVerifyEmailToken(req.body.__auth__)
+    }
   }
 }
