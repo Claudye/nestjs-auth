@@ -3,7 +3,7 @@ export const RCODES= {
     //native
 
     /**
-     * User not found
+     * User found
      */
     USER_FOUND:20,
     /**
@@ -14,6 +14,7 @@ export const RCODES= {
      * User authenficate and email verified
      */
     USER_EMAIL_VERIFIED:22,
-
+    // User token expired
+    USER_TOKEN_EXPIRED: 30,
     //
 }

@@ -157,7 +157,11 @@ export class AuthService {
         }
         return false;
     }
-
+    /**
+     * Generate email verification token
+     * @param user 
+     * @returns 
+     */
     generateVerifyEmailToken(user: any) {
         const data = {
             userId: user.id,
@@ -167,5 +171,22 @@ export class AuthService {
         return this.encrypt.encrypt(
             JSON.stringify(data)
         )
+    }
+    /**
+     * Return user id, and date encrypted
+     * @param email 
+     * @returns 
+     */
+    async forgotPassword(email:string){
+        const user = await this.usersService.findByEmail(email)
+
+        if (!user) {
+            return undefined
+        }
+        const data = {
+            userId: user.id,
+            init: Date.now()
+        }
+        return this.encrypt.encrypt(JSON.stringify(data)) as string
     }
 }

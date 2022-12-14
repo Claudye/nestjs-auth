@@ -1,10 +1,13 @@
 import { Body, Controller, Get, Param, Post, Req, Request, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { RCODES } from 'src/constants';
+import { EncryptionService } from 'src/encryption/encryption.service';
+import { HashService } from 'src/hash/hash.service';
 
 import { ResetPassDto } from 'src/users/dto/reset-pass.dto';
 import { User } from 'src/users/entities/User';
 import { UsersService } from 'src/users/users.service';
 import { jwt_access_token_from_req } from 'src/utils/helpers';
+import { AuthModule } from './auth.module';
 import { AuthService } from './auth.service';
 import { RegisterUserDto } from './dto';
 @Controller('auth')
@@ -12,6 +15,8 @@ export class AuthController {
 
   constructor(
     private authService: AuthService,
+    private encrypter: EncryptionService,
+    private hash: HashService,
     private usersService: UsersService) {
 
   }
@@ -47,12 +52,72 @@ export class AuthController {
   resetPassword(@Body() resetPassDto: ResetPassDto) {
     // get old password, and check if user can process
   }
+  /**
+   * 
+   * @param body 
+   * @param response 
+   */
+  @Post('forgot-password')
+  async forgotPasswordToken(@Body() body: { email: string }, @Res() response) {
+    let statusCode = 200, message = "Ok", status = true;
+    const r = await this.authService.forgotPassword(body.email)
+    if (!r) statusCode = 404; status = false; message = "User not found"
+    response.status(statusCode)
+    response.send({
+      status: status,
+      message: message,
+      data: {
+        forgot_token: r
+      }
+    })
+  }
 
-  forgotPassword() {
-    //generate en email to user
+  /**
+ * 
+ * @param body 
+ * @param response 
+ */
+  @Post('forgot-password')
+  async forgotPassword(@Body() body: { pass: string, cpass: string, token: string }, @Res() response) {
+    let statusCode = 200, message = "Ok", status = false, user;
+    const jsonValue = this.encrypter.decrypt(body.token)
+    let obj = JSON.parse(jsonValue);
+    if (obj && obj.userId) {
+      const isExpired = Date.now() - (Number(obj.init) + AuthModule.VERIFY_EMAIL_EXPIRED_AT) >= 0;
+      user = await this.usersService.findById(obj.userId);
+      if (isExpired) {
+        statusCode = 403
+        message = "Token expired"
+
+      }
+
+      if (!user) {
+        statusCode = 404
+      }
+
+      if (body.pass !== body.cpass) {
+        statusCode = 404
+        message = "Password and confirm password are not the same"
+      }
+      if (!isExpired && user && body.pass === body.cpass) {
+        user =this.usersService.update(
+          user,
+          { password: await this.hash.hash(body.cpass) }
+        )
+        status = true
+      }
+    }
+    response.status(statusCode)
+    response.send({
+      status: status,
+      message: message,
+      data: {
+        user: user
+      }
+    })
   }
   /**
-   * /verify-email/userid/token
+   * /verify-email/token
    */
   @Get('verify-email/:token')
   async verifyEmail(@Param() param, @Req() request, @Res() response) {
@@ -74,12 +139,11 @@ export class AuthController {
     return response.send({
       responsecode: code,
       status: status,
-      data:res
+      data: res
     })
   }
   @Post('resend-email-token')
   resendEmailValidationToken(@Req() req) {
-
     return {
       verify_email_token: this.authService.generateVerifyEmailToken(req.body.__auth__)
     }
