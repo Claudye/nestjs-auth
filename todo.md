@@ -4,7 +4,6 @@
     - Resend e-mail notification
      - Verify email
 ##### Todo
-   
-    - Forget password
+    - Forget password (test)
     - Reset password
     - Edit profile
